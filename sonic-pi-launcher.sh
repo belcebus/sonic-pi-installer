@@ -1,4 +1,6 @@
 #!/usr/bin/bash
+
+main() {
 set -o pipefail
 
 APP_DIR="$HOME/.local/share/sonic-pi-app"
@@ -7,11 +9,15 @@ VERSION_FILE="$APP_DIR/VERSION"
 ICON_PATH="$APP_DIR/sonic-pi.png"
 ICON_URL="https://raw.githubusercontent.com/sonic-pi-net/sonic-pi/dev/app/gui/images/icon.png"
 DESKTOP_FILE="$HOME/.local/share/applications/sonic-pi.desktop"
+LAUNCHER_PATH="$APP_DIR/sonic-pi-launcher.sh"
+LAUNCHER_URL="https://raw.githubusercontent.com/belcebus/sonic-pi-installer/main/sonic-pi-launcher.sh"
+TMP_LAUNCHER=""
 TMP_APPIMAGE=""
 TMP_VERSION=""
 TMP_ICON=""
 
 cleanup() {
+  [ -z "$TMP_LAUNCHER" ] || rm -f -- "$TMP_LAUNCHER"
   [ -z "$TMP_APPIMAGE" ] || rm -f -- "$TMP_APPIMAGE"
   [ -z "$TMP_VERSION" ] || rm -f -- "$TMP_VERSION"
   [ -z "$TMP_ICON" ] || rm -f -- "$TMP_ICON"
@@ -53,9 +59,30 @@ if ! mkdir -p "$APP_DIR"; then
   exit 1
 fi
 
-if [ "$0" != "$APP_DIR/sonic-pi-launcher.sh" ] &&
-  ! cp "$0" "$APP_DIR/sonic-pi-launcher.sh"; then
-  echo "❌  No se pudo copiar el launcher al directorio de la aplicación." >&2
+if [[ $- == *s* ]] || [ ! "${BASH_SOURCE[0]}" -ef "$LAUNCHER_PATH" ]; then
+  TMP_LAUNCHER=$(mktemp "$APP_DIR/.sonic-pi-launcher.XXXXXX") || {
+    echo "❌  No se pudo crear un archivo temporal para el launcher." >&2
+    exit 1
+  }
+  if [[ $- != *s* ]]; then
+    if ! cp -- "${BASH_SOURCE[0]}" "$TMP_LAUNCHER"; then
+      echo "❌  No se pudo copiar el launcher al directorio de la aplicación." >&2
+      exit 1
+    fi
+  elif ! command -v curl >/dev/null 2>&1 ||
+    ! curl --fail --silent --show-error --location \
+      --connect-timeout 10 --max-time 30 --output "$TMP_LAUNCHER" "$LAUNCHER_URL"; then
+    echo "❌  No se pudo descargar el launcher para el acceso directo." >&2
+    exit 1
+  fi
+  if [ ! -s "$TMP_LAUNCHER" ] || ! bash -n "$TMP_LAUNCHER" ||
+    ! chmod +x "$TMP_LAUNCHER" || ! mv -f -- "$TMP_LAUNCHER" "$LAUNCHER_PATH"; then
+    echo "❌  No se pudo instalar una copia válida del launcher." >&2
+    exit 1
+  fi
+  TMP_LAUNCHER=""
+elif ! chmod +x "$LAUNCHER_PATH"; then
+  echo "❌  No se pudieron establecer permisos de ejecución para el launcher." >&2
   exit 1
 fi
 
@@ -197,3 +224,6 @@ echo "ℹ️  Acceso directo .desktop actualizado."
 
 # Ejecutar la aplicación Sonic Pi
 exec "$EXEC_PATH" "$@"
+}
+
+main "$@"

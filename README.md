@@ -17,7 +17,23 @@ Necesita una AppImage ejecutable para iniciar Sonic Pi.
 
 ## Instalación y ejecución
 
-Desde una copia local de este repositorio:
+### Sin clonar el repositorio
+
+Ejecuta este comando para descargar y ejecutar el launcher desde la rama
+`main`:
+
+```bash
+bash -o pipefail -c 'curl -fsSL https://raw.githubusercontent.com/belcebus/sonic-pi-installer/main/sonic-pi-launcher.sh | bash'
+```
+
+El comando ejecuta código descargado de Internet. Puedes revisar antes el
+[script](./sonic-pi-launcher.sh) en el repositorio. El launcher descarga
+además una copia de sí mismo para que funcione el acceso directo; no es
+necesario clonar el repositorio ni descargar manualmente un archivo temporal.
+
+### Desde una copia local
+
+Desde el directorio del repositorio:
 
 ```bash
 chmod +x sonic-pi-launcher.sh
@@ -39,10 +55,10 @@ actualiza la base de datos de aplicaciones.
 
 ## Desinstalación
 
-Ejecuta el launcher con la opción `--uninstall`:
+Ejecuta la copia instalada del launcher con la opción `--uninstall`:
 
 ```bash
-./sonic-pi-launcher.sh --uninstall
+bash "$HOME/.local/share/sonic-pi-app/sonic-pi-launcher.sh" --uninstall
 ```
 
 Esto elimina `~/.local/share/sonic-pi-app/` y el acceso directo
